@@ -1,6 +1,7 @@
 import pygame
 import time
 import random
+pygame.font.init()
 
 
 
@@ -12,31 +13,79 @@ BG = pygame.transform.scale(pygame.image.load("Background.jpg"), (WIDTH, HEIGHT)
 PLAYER_WIDTH = 40
 PLAYER_HEIGHT = 60
 PLAYER_VEL = 5
-def draw(player):
+STAR_WIDTH = 10
+STAR_HEIGHT = 20
+STAR_VEL = 5
+FONT = pygame.font.SysFont("comicsans", 30)
+
+def draw(player, elapsed_time, stars):
     WIN.blit(BG,(0, 0))
+
+    time_text = FONT.render(f"Time: {round(elapsed_time)}s", 1, "white")
+    WIN.blit(time_text, (10,10))
+ 
     pygame.draw.rect(WIN, "red", player)
+
+    for star in stars:
+        pygame.draw.rect(WIN, "white", star)
     pygame.display.update()
 def main():
     run = True # this ensures the games always running
 
     player = pygame.Rect(200, HEIGHT - PLAYER_HEIGHT, PLAYER_WIDTH, PLAYER_HEIGHT)
     clock = pygame.time.Clock()
+
+
+    start_time = time.time()
+    elapsed_time = 0        
+    star_add_increment = 2000
+    star_count = 0
+
+    stars = []
+    hit = False
+
+    clock = pygame.time.Clock()
+
     while run:
+        star_count += clock.tick(144)
         clock.tick(144)
+        elapsed_time = time.time() - start_time
+         
+        if star_count > star_add_increment:
+            for _ in range(3):
+                star_x = random.randint(0, WIDTH - STAR_WIDTH )
+                star = pygame.Rect(star_x, -STAR_HEIGHT, STAR_WIDTH, STAR_HEIGHT )
+                stars.append(star)
+
+            star_add_increment = max(200, star_add_increment - 50)
+            star_count = 0 
+
         for event in pygame.event.get(): #This is when a button/click happens
             if event.type == pygame.QUIT: #If someone wants ot quit the game
                 run = False # Ends the game
                 break #Clears the screen
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_a]:
+        if keys[pygame.K_a] and player.x - PLAYER_VEL >=0: 
             player.x -= PLAYER_VEL
-        if keys[pygame.K_d]:
+        if keys[pygame.K_d] and player.x + PLAYER_VEL + PLAYER_WIDTH <= WIDTH:
             player.x += PLAYER_VEL
-        if keys[pygame.K_s]:
+        if keys[pygame.K_s] and player.y + PLAYER_VEL + PLAYER_HEIGHT <= HEIGHT:
             player.y += PLAYER_VEL
-        if keys[pygame.K_w]:
+        if keys[pygame.K_w] and player.y - PLAYER_VEL >=0:
             player.y -= PLAYER_VEL
-        draw(player)
+        
+        for star in stars[:]:
+            star.y += STAR_VEL
+            if star.y > HEIGHT:
+                stars.remove(star)
+            elif star.y + star.height >= player.y and star.colliderect(player):
+                stars.remove(star)
+                hit = True
+                break
+        if hit:
+            lost_text = FONT.render("You lost!", 1, "red")
+            WIN.blit(lost_text, (WIDTH/2 - lost_text.get_width()/2, HEIGHT/2 - lost_text.get_height/2))
+        draw(player, elapsed_time, stars)
     pygame.quit() #quits the game after the while loop
 
 if __name__ == "__main__": #If the file is called it makes sure that the loop for the game isn't started
